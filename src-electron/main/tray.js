@@ -15,7 +15,12 @@ let showWindow = null
  */
 export function createTray (onShow) {
   showWindow = onShow
-  const icon = nativeImage.createFromPath(resourcePath('icons', 'tray.png'))
+  const iconFile = resourcePath('icons', 'tray.png')
+  const icon = nativeImage.createFromPath(iconFile)
+  if (icon.isEmpty()) {
+    // An empty image gives a blank tray slot with no hint as to why, so say it.
+    log.warn('tray', `tray icon missing or unreadable at ${iconFile}`)
+  }
   tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon.resize({ width: 18, height: 18 }))
   tray.setToolTip('Quasar Herd')
   tray.on('click', () => onShow())

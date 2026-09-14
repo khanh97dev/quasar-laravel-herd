@@ -35,10 +35,22 @@ supervisor.register({
 
 const api = () => `http://127.0.0.1:${settings.get('services').mailpit.uiPort}/api/v1`
 
+/**
+ * Mailpit answers reads with JSON but replies to PUT and DELETE with a plain
+ * "ok", so parsing everything as JSON throws on a request that actually
+ * succeeded. Decide by content type, not by assumption.
+ */
 async function json (url, init) {
   const res = await fetch(url, init)
   if (!res.ok) throw new Error(`Mail API ${res.status}: ${await res.text()}`)
-  return res.status === 204 ? null : res.json()
+  if (res.status === 204) return null
+
+  const type = res.headers.get('content-type') ?? ''
+  if (!type.includes('json')) {
+    const text = (await res.text()).trim()
+    return text === '' ? null : text
+  }
+  return res.json()
 }
 
 export async function messages ({ limit = 50, start = 0, query = '' } = {}) {

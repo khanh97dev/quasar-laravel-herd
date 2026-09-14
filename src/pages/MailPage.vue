@@ -62,9 +62,12 @@
           <q-separator dark />
           <q-tab-panels v-model="view" dark animated>
             <q-tab-panel name="html">
-              <!-- Rendered in a sandboxed frame: mail HTML is untrusted input. -->
+              <!-- Rendered in a sandboxed frame: mail HTML is untrusted input.
+                   srcdoc is bound, not assigned through a ref: the panel mounts
+                   in the same tick the message is selected, so an imperative
+                   write lands before the iframe exists and shows nothing. -->
               <iframe
-                ref="frame" sandbox="" class="full-width"
+                :srcdoc="renderedHtml" sandbox="" class="full-width"
                 style="height: 55vh; border: 0; background: #fff; border-radius: 8px"
               />
             </q-tab-panel>
@@ -86,9 +89,10 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useHerdStore } from 'stores/herd'
+import { withCheckedImages } from 'src/utils/images'
 
 defineOptions({ name: 'MailPage' })
 
@@ -100,7 +104,7 @@ const selected = ref(null)
 const query = ref('')
 const loading = ref(false)
 const view = ref('html')
-const frame = ref(null)
+const renderedHtml = ref('')
 
 const running = computed(() => store.service('mailpit').status === 'running')
 
@@ -115,18 +119,33 @@ async function load () {
 
 async function openMessage (message) {
   selected.value = await store.api.mail.get(message.id)
-  await store.api.mail.read(message.id, true)
-  message.read = true
   await renderHtml()
+
+  // Marking as read is bookkeeping; failing at it must not hide the message.
+  try {
+    await store.api.mail.read(message.id, true)
+    message.read = true
+  } catch { /* the toast from the bridge already said what went wrong */ }
 }
 
-// srcdoc keeps the message isolated from the app's own origin.
+/**
+ * The frame is sandboxed because mail HTML is untrusted. Image sources are
+ * probed after the body is on screen, so a sender's dead CDN turns into a
+ * placeholder instead of a broken-image glyph, without delaying the text.
+ */
 async function renderHtml () {
-  await nextTick()
-  if (frame.value) frame.value.srcdoc = selected.value?.html || '<p style="font-family:sans-serif;padding:16px">No HTML body.</p>'
-}
+  const body = selected.value?.html
+  if (!body) {
+    renderedHtml.value = '<p style="font-family:sans-serif;padding:16px">No HTML body.</p>'
+    return
+  }
 
-watch(view, v => { if (v === 'html') renderHtml() })
+  const id = selected.value.id
+  renderedHtml.value = body
+  const checked = await withCheckedImages(body)
+  // The user may have clicked another message while the probes were running.
+  if (selected.value?.id === id) renderedHtml.value = checked
+}
 
 async function remove (message) {
   await store.api.mail.remove(message.id)

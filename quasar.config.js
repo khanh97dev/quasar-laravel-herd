@@ -43,6 +43,9 @@ export default defineConfig(() => ({
       productName: 'Quasar Herd',
       copyright: 'Copyright © 2026',
       directories: { output: 'dist/installers' },
+      // resourcePath() reads from <resources>/app-resources at runtime; without
+      // this the tray icon file simply is not in the package.
+      extraResources: [{ from: 'resources', to: 'app-resources' }],
       linux: {
         target: ['AppImage', 'deb'],
         category: 'Development',
