@@ -1,0 +1,51 @@
+:root {
+  --herd-surface: #15151a;
+  --herd-surface-alt: #1c1c22;
+  --herd-border: #2a2a33;
+}
+
+body.body--dark {
+  background: #0c0c0c;
+}
+
+.herd-card {
+  background: var(--herd-surface);
+  border: 1px solid var(--herd-border);
+  border-radius: 12px;
+}
+
+.herd-mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+}
+
+.herd-log {
+  background: #08080a;
+  border-radius: 10px;
+  padding: 12px 14px;
+  max-height: 60vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+
+  &.running { background: #21ba45; box-shadow: 0 0 8px rgba(33, 186, 69, 0.6); }
+  &.starting { background: #f2c037; animation: pulse 1.2s ease-in-out infinite; }
+  &.error { background: #c10015; }
+  &.stopped { background: #555; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.q-table__container {
+  background: var(--herd-surface);
+}
