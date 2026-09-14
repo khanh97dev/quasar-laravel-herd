@@ -5,27 +5,44 @@ import { Notify } from 'quasar'
  * Every main-process call returns { ok, data | error }. Unwrapping it here
  * means pages can `await api.sites.list()` and get the payload directly, while
  * failures surface as one consistent toast.
+ *
+ * This builds a plain object rather than proxying the bridge: contextBridge
+ * exposes frozen, non-configurable properties, and a proxy `get` trap that
+ * returns anything other than the original value violates the proxy invariant
+ * and throws on first access.
  */
-function unwrap (namespace) {
-  return new Proxy(namespace, {
-    get (target, prop) {
-      const value = target[prop]
-      if (typeof value !== 'function') return value
-      if (String(prop).startsWith('on')) return value
+function wrapNamespace (namespace) {
+  const wrapped = {}
 
-      return async (...args) => {
-        const result = await value(...args)
-        if (result && typeof result === 'object' && 'ok' in result) {
-          if (!result.ok) {
-            Notify.create({ type: 'negative', message: result.error, timeout: 6000, actions: [{ icon: 'close', color: 'white' }] })
-            throw new Error(result.error)
-          }
-          return result.data
-        }
-        return result
-      }
+  for (const key of Object.keys(namespace)) {
+    const value = namespace[key]
+
+    // Subscription helpers (onProgress, onDump, ...) return an unsubscribe
+    // function and never the { ok, data } envelope, so pass them through.
+    if (typeof value !== 'function' || key.startsWith('on')) {
+      wrapped[key] = value
+      continue
     }
-  })
+
+    wrapped[key] = async (...args) => {
+      const result = await value(...args)
+      if (result && typeof result === 'object' && 'ok' in result) {
+        if (!result.ok) {
+          Notify.create({
+            type: 'negative',
+            message: result.error,
+            timeout: 6000,
+            actions: [{ icon: 'close', color: 'white' }]
+          })
+          throw new Error(result.error)
+        }
+        return result.data
+      }
+      return result
+    }
+  }
+
+  return wrapped
 }
 
 export default boot(({ app }) => {
@@ -38,7 +55,9 @@ export default boot(({ app }) => {
     return
   }
 
-  const api = Object.fromEntries(Object.entries(raw).map(([key, ns]) => [key, unwrap(ns)]))
+  const api = {}
+  for (const key of Object.keys(raw)) api[key] = wrapNamespace(raw[key])
+
   app.config.globalProperties.$herd = api
   app.provide('herd', api)
   window.$herd = api

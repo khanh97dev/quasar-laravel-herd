@@ -2,6 +2,11 @@
   <q-layout view="hHh LpR fFf">
     <q-header class="bg-dark-page" bordered>
       <q-toolbar class="q-py-sm">
+        <!-- The drawer auto-hides on narrow windows, so it needs a way back. -->
+        <q-btn
+          flat dense round icon="menu" class="q-mr-xs lt-md"
+          aria-label="Toggle navigation" @click="drawerOpen = !drawerOpen"
+        />
         <q-avatar square size="28px" class="q-mr-sm">
           <div class="text-primary text-weight-bold" style="font-size: 22px">◆</div>
         </q-avatar>
@@ -27,7 +32,7 @@
       </q-toolbar>
     </q-header>
 
-    <q-drawer show-if-above :width="216" bordered class="bg-dark">
+    <q-drawer v-model="drawerOpen" show-if-above :width="216" bordered class="bg-dark">
       <q-list padding>
         <q-item
           v-for="item in nav" :key="item.to"
@@ -62,7 +67,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { useHerdStore } from 'stores/herd'
 
@@ -71,6 +76,7 @@ defineOptions({ name: 'MainLayout' })
 const $q = useQuasar()
 const store = useHerdStore()
 const busy = reactive({ start: false, stop: false, refresh: false })
+const drawerOpen = ref(false)
 
 const nav = computed(() => [
   { to: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
