@@ -57,7 +57,8 @@ contextBridge.exposeInMainWorld('herd', {
     rename: (domain, name) => invoke('sites:rename', domain, name),
     apply: () => invoke('sites:apply'),
     create: options => invoke('sites:create', options),
-    vhost: domain => invoke('sites:vhost', domain)
+    vhost: domain => invoke('sites:vhost', domain),
+    onChange: handler => on('sites:changed', handler)
   },
 
   services: {

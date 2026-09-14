@@ -7,6 +7,7 @@ import { listInstalled, reapOrphans } from './services/php.js'
 import { createCa } from './features/ssl.js'
 import { dumpServer } from './services/dumps.js'
 import * as sites from './features/sites.js'
+import { parkWatcher } from './features/watcher.js'
 import * as web from './services/web.js'
 
 // Side-effect imports: each registers its services with the supervisor.
@@ -46,6 +47,9 @@ export async function bootstrap () {
 
   await sites.apply().catch(err => log.error('boot', `site sync failed: ${err.message}`))
 
+  // Dropping a project into a parked folder must be enough to serve it.
+  parkWatcher.start()
+
   if (settings.get('autoStart') && installed.length > 0) {
     await web.ensureLowPortsAllowed().catch(err => log.warn('boot', err.message))
     await supervisor.start('nginx').catch(err => log.error('boot', `nginx: ${err.message}`))
@@ -59,6 +63,7 @@ export async function bootstrap () {
 
 export async function shutdown () {
   log.info('boot', 'shutting down services')
+  parkWatcher.stop()
   dumpServer.stop()
   await web.stopEverything().catch(err => log.error('boot', err))
 }

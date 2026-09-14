@@ -11,7 +11,7 @@ project inside it is instantly served at `name.test` over HTTP or HTTPS.
 
 | Feature | Detail |
 | --- | --- |
-| **Parked & linked sites** | Park a directory and every subfolder becomes a site. Link individual projects from anywhere. |
+| **Parked & linked sites** | Park a directory and every subfolder becomes a site — dropping a project in serves it within a second, no restart. Link individual projects from anywhere. |
 | **Per-site PHP version** | Install PHP 7.4 – 8.5 side by side; pick a version per site from a dropdown. |
 | **Automatic vhosts** | nginx configs are generated from your sites — document root, `try_files`, and FastCGI wiring are detected per project type. |
 | **Local HTTPS** | A local certificate authority is minted on first run (pure JS, no OpenSSL needed) and per-site certificates are issued on demand. One click installs it into the system and browser trust stores. |

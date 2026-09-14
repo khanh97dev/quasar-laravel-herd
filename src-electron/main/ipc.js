@@ -17,6 +17,7 @@ import * as ssl from './features/ssl.js'
 import * as hosts from './features/hosts.js'
 import * as nginx from './features/nginx.js'
 import * as logs from './features/logs.js'
+import { parkWatcher } from './features/watcher.js'
 import { fetchAndInstall } from './core/download.js'
 import { RUNTIMES } from './core/registry.js'
 
@@ -112,8 +113,16 @@ export function registerIpc () {
   handle('sites:list', async () => Promise.all(sites.list().map(sites.describe)))
   handle('sites:link', (root, options) => sites.link(root, options))
   handle('sites:unlink', domain => sites.unlink(domain))
-  handle('sites:park', dir => sites.park(dir))
-  handle('sites:unpark', dir => sites.unpark(dir))
+  handle('sites:park', async dir => {
+    const parked = await sites.park(dir)
+    parkWatcher.restart()
+    return parked
+  })
+  handle('sites:unpark', async dir => {
+    const parked = await sites.unpark(dir)
+    parkWatcher.restart()
+    return parked
+  })
   handle('sites:setPhp', (domain, version) => sites.setPhpVersion(domain, version))
   handle('sites:setSecure', (domain, secure) => sites.setSecure(domain, secure))
   handle('sites:rename', (domain, name) => sites.rename(domain, name))
@@ -234,6 +243,8 @@ export function registerIpc () {
   /* -------------------------------------------------------- lifecycle */
 
   supervisor.on('change', state => broadcast('services:changed', state))
+  // A site appearing on disk should show up in an open window without a refresh.
+  parkWatcher.on('change', () => broadcast('sites:changed', null))
 
   ensureDirs()
   log.info('ipc', `registered handlers (${IS_WIN ? 'windows' : IS_LINUX ? 'linux' : process.platform})`)

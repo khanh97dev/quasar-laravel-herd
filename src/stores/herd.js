@@ -34,6 +34,9 @@ export const useHerdStore = defineStore('herd', {
       if (!window.$herd) return
       window.$herd.app.onReady(({ firstRun }) => { this.firstRun = firstRun; this.ready = true })
       window.$herd.app.onError(message => { this.lastError = message })
+      // The main process watches parked folders; a new project appears here
+      // without the user pressing refresh.
+      window.$herd.sites.onChange(() => this.refreshSites())
       window.$herd.services.onChange(state => {
         const index = this.services.findIndex(s => s.id === state.id)
         if (index === -1) this.services.push(state)
