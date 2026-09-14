@@ -7,6 +7,9 @@ import { defineStore } from 'pinia'
  */
 export const useHerdStore = defineStore('herd', {
   state: () => ({
+    // False when the page is open in a plain browser instead of the Electron
+    // shell, so the UI can explain that rather than crash on a missing bridge.
+    bridgeAvailable: typeof window !== 'undefined' && Boolean(window.$herd),
     ready: false,
     info: null,
     settings: {},
@@ -31,7 +34,8 @@ export const useHerdStore = defineStore('herd', {
 
   actions: {
     async init () {
-      if (!window.$herd) return
+      this.bridgeAvailable = Boolean(window.$herd)
+      if (!this.bridgeAvailable) return
       window.$herd.app.onReady(({ firstRun }) => { this.firstRun = firstRun; this.ready = true })
       window.$herd.app.onError(message => { this.lastError = message })
       // The main process watches parked folders; a new project appears here

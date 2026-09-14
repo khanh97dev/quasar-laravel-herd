@@ -24,9 +24,15 @@
           {{ store.webRunning ? 'Serving' : 'Stopped' }}
         </q-chip>
 
-        <q-btn flat dense no-caps icon="play_arrow" label="Start all" :loading="busy.start" @click="startAll" />
-        <q-btn flat dense no-caps icon="stop" label="Stop all" :loading="busy.stop" @click="stopAll" />
-        <q-btn flat dense round icon="refresh" :loading="busy.refresh" @click="refresh">
+        <q-btn
+          flat dense no-caps icon="play_arrow" label="Start all"
+          :disable="!store.bridgeAvailable" :loading="busy.start" @click="startAll"
+        />
+        <q-btn
+          flat dense no-caps icon="stop" label="Stop all"
+          :disable="!store.bridgeAvailable" :loading="busy.stop" @click="stopAll"
+        />
+        <q-btn flat dense round icon="refresh" :disable="!store.bridgeAvailable" :loading="busy.refresh" @click="refresh">
           <q-tooltip>Refresh everything</q-tooltip>
         </q-btn>
       </q-toolbar>
@@ -61,7 +67,23 @@
           <q-btn flat dense label="Dismiss" @click="store.lastError = null" />
         </template>
       </q-banner>
-      <router-view />
+      <router-view v-if="store.bridgeAvailable" />
+
+      <!-- Opening the dev URL in a normal browser gives no IPC bridge; say so
+           instead of letting every page fail on an undefined API. -->
+      <q-page v-else class="column flex-center q-pa-xl text-center">
+        <q-icon name="desktop_access_disabled" size="56px" color="grey-7" class="q-mb-md" />
+        <div class="text-h6 q-mb-sm">Open this in the desktop app</div>
+        <div class="text-body2 text-grey-5" style="max-width: 460px">
+          Quasar Herd talks to PHP, nginx and your certificates through the Electron
+          process. A normal browser tab has no access to any of that, so there is
+          nothing to show here.
+        </div>
+        <div class="herd-mono q-mt-lg q-pa-md herd-card">npm run dev</div>
+        <div class="text-caption text-grey-7 q-mt-sm">
+          Use the window that command opens, not <code>localhost:9300</code>.
+        </div>
+      </q-page>
     </q-page-container>
   </q-layout>
 </template>
